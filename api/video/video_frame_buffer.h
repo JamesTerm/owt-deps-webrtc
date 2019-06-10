@@ -18,6 +18,7 @@
 
 namespace webrtc {
 
+class INativeBufferInterface;
 class I420BufferInterface;
 class I420ABufferInterface;
 class I444BufferInterface;
@@ -77,9 +78,21 @@ class VideoFrameBuffer : public rtc::RefCountInterface {
   const I444BufferInterface* GetI444() const;
   I010BufferInterface* GetI010();
   const I010BufferInterface* GetI010() const;
-
+  INativeBufferInterface* GetINative();
+  const INativeBufferInterface* GetINative() const;
  protected:
   ~VideoFrameBuffer() override {}
+};
+
+// This interface represents native frames
+class INativeBufferInterface : public VideoFrameBuffer {
+ public:
+  Type type() const final;
+  virtual const uint8_t* Data() const = 0;
+  rtc::scoped_refptr<I420BufferInterface> ToI420() override;
+  virtual size_t size() const=0;
+ protected:
+  ~INativeBufferInterface() override {}
 };
 
 // This interface represents planar formats.
