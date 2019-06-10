@@ -92,13 +92,13 @@ class SendNativeFrame
     const video_coding::EncodedFrame *m_frame;
   public:
     WrapEncodedFrame(const video_coding::EncodedFrame *frame) : m_frame(frame)  {}
-    virtual int width() const
+    virtual int width() const override
       {   return m_frame->EncodedImage()._encodedWidth;
       }
-    virtual int height() const
+    virtual int height() const override
       { return m_frame->EncodedImage()._encodedHeight;
       }
-    virtual const uint8_t* Data() const
+    virtual const uint8_t* Data() const override
       {  return m_frame->Buffer();
       }
     size_t size() const override
