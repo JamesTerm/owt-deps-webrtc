@@ -82,6 +82,48 @@ VideoCodec CreateDecoderVideoCodec(const VideoReceiveStream::Decoder& decoder) {
 
 namespace internal {
 
+class SendNativeFrame
+{
+  private:
+  VideoReceiveStream *m_pParent;
+  class WrapEncodedFrame : public INativeBufferInterface
+  {
+  private:
+    const video_coding::EncodedFrame *m_frame;
+  public:
+    WrapEncodedFrame(const video_coding::EncodedFrame *frame) : m_frame(frame)  {}
+    virtual int width() const
+      {   return m_frame->EncodedImage()._encodedWidth;
+      }
+    virtual int height() const
+      { return m_frame->EncodedImage()._encodedHeight;
+      }
+    virtual const uint8_t* Data() const
+      {  return m_frame->Buffer();
+      }
+    size_t size() const
+      { return m_frame->size();
+      }
+  };
+  public:
+  SendNativeFrame(VideoReceiveStream* parent,const video_coding::EncodedFrame *frame) : m_pParent(parent)
+  {
+    //static int counter=0;
+    //Note:  it is assumed to always get h264 when asked for it, this simpler logic can work for that case
+    RTC_DCHECK_EQ(frame->CodecSpecific()->codecType,kVideoCodecH264);
+    //printf("[%4d] Sending h264 %p %p\n",counter++,m_pParent,frame);
+    rtc::scoped_refptr<WrapEncodedFrame> video_frame_buffer = new rtc::RefCountedObject<WrapEncodedFrame>(frame);
+    //const INativeBufferInterface *frame_info=video_frame_buffer->GetINative();
+    //printf("[%4d] Sending h264 %p %p\n",counter++,m_pParent,frame_info->Data());
+    //printf("Sending h264 [%d]x[%d] %p\n",frame_info->width(),frame_info->height(),m_pParent);
+    //Note: The compressed frames do not really need the rotation to be resolved here as this gets delegated to the client
+    //The video renderer does not include timestamps, I've included them here to reserve ability to pass them up if needed
+    VideoFrame frame_to_send(video_frame_buffer,(uint32_t) frame->ReceivedTime(), frame->RenderTime(), kVideoRotation_0);
+    m_pParent->OnFrame(frame_to_send);
+  }
+};
+
+
 VideoReceiveStream::VideoReceiveStream(
     RtpStreamReceiverControllerInterface* receiver_controller,
     int num_cpu_cores,
@@ -296,6 +338,13 @@ void VideoReceiveStream::RemoveSecondarySink(
 
 // TODO(tommi): This method grabs a lock 6 times.
 void VideoReceiveStream::OnFrame(const VideoFrame& video_frame) {
+  //For sending frames directly avoid extra overhead with the stats_proxy_ call
+  if (config_.want_h264_frames)
+  {
+    config_.renderer->OnFrame(video_frame);
+    return;
+  }
+
   int64_t sync_offset_ms;
   double estimated_freq_khz;
   // TODO(tommi): GetStreamSyncOffsetInMs grabs three locks.  One inside the
@@ -417,7 +466,14 @@ bool VideoReceiveStream::Decode() {
   if (frame) {
     int64_t now_ms = clock_->TimeInMilliseconds();
     RTC_DCHECK_EQ(res, video_coding::FrameBuffer::ReturnReason::kFrameFound);
-    int decode_result = video_receiver_.Decode(frame.get());
+    int decode_result;
+    if (!config_.want_h264_frames)
+      decode_result = video_receiver_.Decode(frame.get());
+    else
+    {
+      SendNativeFrame sending_frame(this,frame.get());
+      decode_result = WEBRTC_VIDEO_CODEC_OK;
+    }
     if (decode_result == WEBRTC_VIDEO_CODEC_OK ||
         decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME) {
       keyframe_required_ = false;
