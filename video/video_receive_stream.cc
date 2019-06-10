@@ -101,7 +101,7 @@ class SendNativeFrame
     virtual const uint8_t* Data() const
       {  return m_frame->Buffer();
       }
-    size_t size() const
+    size_t size() const override
       { return m_frame->size();
       }
   };
