@@ -217,7 +217,7 @@ class VideoReceiveStream {
     // used for streaming instead of a real-time call.
     int target_delay_ms = 0;
     //If true this will bypass the decoder if the frames are h264
-    bool want_h264_frames = true;
+    bool want_h264_frames = false;
   };
 
   // Starts stream activity.
@@ -248,6 +248,10 @@ class VideoReceiveStream {
   virtual void AddSecondarySink(RtpPacketSinkInterface* sink) = 0;
   virtual void RemoveSecondarySink(const RtpPacketSinkInterface* sink) = 0;
 
+  // provide method to allow client to change options, and to provide feedback if needed
+  virtual const char* SetOptions(int argc,const char* argv[])=0;
+  //Setup callbacks
+  VideoReceiveStream();
  protected:
   virtual ~VideoReceiveStream() {}
 };

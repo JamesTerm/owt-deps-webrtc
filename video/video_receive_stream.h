@@ -71,6 +71,9 @@ class VideoReceiveStream : public webrtc::VideoReceiveStream,
   void Start() override;
   void Stop() override;
 
+  // provide method to allow client to change options, and to provide feedback if needed
+  const char* SetOptions(int argc,const char* argv[]) override;
+  
   webrtc::VideoReceiveStream::Stats GetStats() const override;
 
   // Takes ownership of the file, is responsible for closing it later.

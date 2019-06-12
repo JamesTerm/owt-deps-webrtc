@@ -518,5 +518,34 @@ bool VideoReceiveStream::Decode() {
   }
   return true;
 }
+
+const char* VideoReceiveStream::SetOptions(int argc,const char** argv)
+{
+  const char *ret=nullptr;
+  switch (argc)
+  {
+    case 1:
+      if (strcmp(argv[0],"get_want_h264_frames")==0)
+        ret=config_.want_h264_frames?"true":"false";
+      break;
+     case 2:
+      if (strcmp(argv[0],"set_want_h264_frames")==0)
+      {
+        VideoReceiveStream::Config &config=const_cast<VideoReceiveStream::Config &>(config_);
+        config.want_h264_frames=(strcmp(argv[1],"true")==0)?true:false;
+      }
+      break;
+    default:
+    {
+      RTC_LOG(LS_INFO) << "VideoReceiveStream::SetOptions";
+      for (int i=0;i<argc;i++)
+        RTC_LOG(LS_INFO) << argv[i];
+      RTC_LOG(LS_INFO) << "==============================\n";
+    }
+  }
+  return ret;
+}
+
+
 }  // namespace internal
 }  // namespace webrtc

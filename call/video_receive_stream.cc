@@ -132,4 +132,18 @@ std::string VideoReceiveStream::Config::Rtp::ToString() const {
   return ss.str();
 }
 
+//TODO this is only for development, if we need to use it then we'll need to implement properly
+#define __JamesHack__
+#ifdef __JamesHack__
+std::function<const char*(int,const char**)> g_VideoReceiveStream_SetOptions=nullptr;
+
+VideoReceiveStream::VideoReceiveStream()
+{
+  g_VideoReceiveStream_SetOptions=[&](int argc,const char** argv)->const char*
+  {
+    return SetOptions(argc,argv);
+  };
+}
+#endif
+
 }  // namespace webrtc
