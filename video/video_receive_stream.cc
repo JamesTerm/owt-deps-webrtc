@@ -117,7 +117,6 @@ class SendNativeFrame
     //printf("[%4d] Sending h264 %p %p\n",counter++,m_pParent,frame_info->Data());
     //printf("Sending h264 [%d]x[%d] %p\n",frame_info->width(),frame_info->height(),m_pParent);
     //Note: The compressed frames do not really need the rotation to be resolved here as this gets delegated to the client
-    //The video renderer does not include timestamps, I've included them here to reserve ability to pass them up if needed
     VideoFrame frame_to_send(video_frame_buffer,(uint32_t) frame->ReceivedTime(), frame->RenderTime(), kVideoRotation_0);
     m_pParent->OnFrame(frame_to_send);
   }
