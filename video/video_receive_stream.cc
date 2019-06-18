@@ -85,40 +85,66 @@ namespace internal {
 class SendNativeFrame
 {
   private:
-  VideoReceiveStream *m_pParent;
+  VideoReceiveStream *m_pParent=nullptr;
+  int m_Width=0,m_Height=0;
   class WrapEncodedFrame : public INativeBufferInterface
   {
   private:
     const video_coding::EncodedFrame *m_frame;
+    int m_Width,m_Height;
   public:
-    WrapEncodedFrame(const video_coding::EncodedFrame *frame) : m_frame(frame)  {}
+    WrapEncodedFrame(const video_coding::EncodedFrame *frame,int width,int height) : m_frame(frame),m_Width(width),m_Height(height)  {}
     virtual int width() const override
-      {   return m_frame->EncodedImage()._encodedWidth;
+      {   return m_Width;
       }
     virtual int height() const override
-      { return m_frame->EncodedImage()._encodedHeight;
+      { return m_Height;
       }
     virtual const uint8_t* Data() const override
       {  return m_frame->Buffer();
       }
-    size_t size() const override
+    virtual size_t size() const override
       { return m_frame->size();
+      }
+    virtual int get_frame_type() const override
+      { return (int)m_frame->FrameType();
       }
   };
   public:
-  SendNativeFrame(VideoReceiveStream* parent,const video_coding::EncodedFrame *frame) : m_pParent(parent)
+  SendNativeFrame(VideoReceiveStream* parent) : m_pParent(parent)
+  {}
+
+  //returns true if successful, if false it will need a keyframe
+  bool operator()(const video_coding::EncodedFrame *frame)
   {
+    const int current_width=frame->EncodedImage()._encodedWidth;
+    m_Width=current_width!=0?current_width:m_Width;
+    const int current_height=frame->EncodedImage()._encodedHeight;
+    m_Height=current_height!=0?current_height:m_Height;
+
+    if ((m_Width==0)||(m_Height==0))
+    {
+      RTC_LOG(LS_INFO) << "* * *  No Resolution" ;
+      return false;
+    }
+
     //static int counter=0;
     //Note:  it is assumed to always get h264 when asked for it, this simpler logic can work for that case
     RTC_DCHECK_EQ(frame->CodecSpecific()->codecType,kVideoCodecH264);
     //printf("[%4d] Sending h264 %p %p\n",counter++,m_pParent,frame);
-    rtc::scoped_refptr<WrapEncodedFrame> video_frame_buffer = new rtc::RefCountedObject<WrapEncodedFrame>(frame);
+    rtc::scoped_refptr<WrapEncodedFrame> video_frame_buffer = new rtc::RefCountedObject<WrapEncodedFrame>(frame,m_Width,m_Height);
     //const INativeBufferInterface *frame_info=video_frame_buffer->GetINative();
     //printf("[%4d] Sending h264 %p %p\n",counter++,m_pParent,frame_info->Data());
-    //printf("Sending h264 [%d]x[%d] %p\n",frame_info->width(),frame_info->height(),m_pParent);
+    // if (frame->FrameType()==FrameType::kVideoFrameKey)
+    //   printf("Sending h264[%d] %dx%d %p\n",frame->FrameType(),frame_info->width(),frame_info->height(),m_pParent);
     //Note: The compressed frames do not really need the rotation to be resolved here as this gets delegated to the client
     VideoFrame frame_to_send(video_frame_buffer,(uint32_t) frame->ReceivedTime(), frame->RenderTime(), kVideoRotation_0);
     m_pParent->OnFrame(frame_to_send);
+    return true;
+  }
+  void Flush()
+  {
+    m_Width=m_Height=0;  //reset resolution
   }
 };
 
@@ -191,6 +217,7 @@ VideoReceiveStream::VideoReceiveStream(
     rtx_receiver_ = receiver_controller->CreateReceiver(
         config_.rtp.rtx_ssrc, rtx_receive_stream_.get());
   }
+  SendNativeFrame_= std::make_unique<SendNativeFrame>(this);
 }
 
 VideoReceiveStream::~VideoReceiveStream() {
@@ -263,6 +290,7 @@ void VideoReceiveStream::Start() {
   call_stats_->RegisterStatsObserver(this);
 
   process_thread_->RegisterModule(&video_receiver_, RTC_FROM_HERE);
+  SendNativeFrame_->Flush();
 
   // Start the decode thread
   video_receiver_.DecoderThreadStarting();
@@ -463,15 +491,27 @@ bool VideoReceiveStream::Decode() {
   }
 
   if (frame) {
+    #if 0
+    const webrtc::VCMEncodedFrame* frame2=frame.get();
+    if (frame2->EncodedImage()._encodedWidth!=0)
+      RTC_LOG(LS_INFO) << "* * * " << frame2->EncodedImage()._encodedWidth;
+    #endif
     int64_t now_ms = clock_->TimeInMilliseconds();
     RTC_DCHECK_EQ(res, video_coding::FrameBuffer::ReturnReason::kFrameFound);
     int decode_result;
     if (!config_.want_h264_frames)
+    {
+      // if (frame->FrameType()==FrameType::kVideoFrameKey)
+      //   printf("Sending Keyframe\n");
+
       decode_result = video_receiver_.Decode(frame.get());
+      // if (decode_result==WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
+      //   printf("Requesting Keyframe\n");
+    }
     else
     {
-      SendNativeFrame sending_frame(this,frame.get());
-      decode_result = WEBRTC_VIDEO_CODEC_OK;
+      const bool result=(*SendNativeFrame_)(frame.get());
+      decode_result = result?WEBRTC_VIDEO_CODEC_OK:WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME;
     }
     if (decode_result == WEBRTC_VIDEO_CODEC_OK ||
         decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME) {
@@ -490,6 +530,7 @@ bool VideoReceiveStream::Decode() {
       last_keyframe_request_ms_ = now_ms;
     }
   } else {
+    //RTC_LOG(LS_NONE) << "* * *  NoFrame" ;
     RTC_DCHECK_EQ(res, video_coding::FrameBuffer::ReturnReason::kTimeout);
     int64_t now_ms = clock_->TimeInMilliseconds();
     absl::optional<int64_t> last_packet_ms =

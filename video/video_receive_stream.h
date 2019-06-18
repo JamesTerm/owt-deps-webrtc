@@ -43,6 +43,8 @@ class VCMJitterEstimator;
 
 namespace internal {
 
+class SendNativeFrame;
+
 class VideoReceiveStream : public webrtc::VideoReceiveStream,
                            public rtc::VideoSinkInterface<VideoFrame>,
                            public EncodedImageCallback,
@@ -154,6 +156,7 @@ class VideoReceiveStream : public webrtc::VideoReceiveStream,
   std::unique_ptr<RtpStreamReceiverInterface> media_receiver_;
   std::unique_ptr<RtxReceiveStream> rtx_receive_stream_;
   std::unique_ptr<RtpStreamReceiverInterface> rtx_receiver_;
+  std::unique_ptr<SendNativeFrame> SendNativeFrame_;
 
   // Whenever we are in an undecodable state (stream has just started or due to
   // a decoding error) we require a keyframe to restart the stream.

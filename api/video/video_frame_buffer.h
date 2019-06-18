@@ -91,6 +91,7 @@ class INativeBufferInterface : public VideoFrameBuffer {
   virtual const uint8_t* Data() const = 0;
   rtc::scoped_refptr<I420BufferInterface> ToI420() override;
   virtual size_t size() const=0;
+  virtual int get_frame_type() const=0;
  protected:
   ~INativeBufferInterface() override {}
 };
