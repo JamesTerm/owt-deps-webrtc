@@ -512,6 +512,20 @@ bool VideoReceiveStream::Decode() {
     {
       const bool result=(*SendNativeFrame_)(frame.get());
       decode_result = result?WEBRTC_VIDEO_CODEC_OK:WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME;
+      //In some tests it is possible to request for a keyframe and never get it.  This code confirms that even with the default path
+      //this still can occur.  It may be a hardware problem though.
+      #if 1
+      //To ensure a best chance of startup success we'll use the existing decoding system to try to get a keyframe
+      if (decode_result==WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
+      {
+            RTC_LOG(LS_WARNING) << "No resolution, sending to video receiver.";
+            decode_result = video_receiver_.Decode(frame.get());
+      }
+      #else
+            //This shouldn't be spamming, if it does something is very wrong
+            if (decode_result==WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
+              RTC_LOG(LS_WARNING) << "No resolution, requesting a keyframe.";
+      #endif
     }
     if (decode_result == WEBRTC_VIDEO_CODEC_OK ||
         decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME) {
