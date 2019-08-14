@@ -217,7 +217,7 @@ class VideoReceiveStream {
     // used for streaming instead of a real-time call.
     int target_delay_ms = 0;
     //If true this will bypass the decoder if the frames are h264
-    bool want_h264_frames = false;
+    bool want_h264_frames = true;
   };
 
   // Starts stream activity.
