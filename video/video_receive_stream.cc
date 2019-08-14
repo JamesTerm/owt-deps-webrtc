@@ -474,6 +474,8 @@ void VideoReceiveStream::DecodeThreadFunction(void* ptr) {
   }
 }
 
+//#define __DecodeVerbose__
+
 bool VideoReceiveStream::Decode() {
   TRACE_EVENT0("webrtc", "VideoReceiveStream::Decode");
   static const int kMaxWaitForFrameMs = 3000;
@@ -487,10 +489,14 @@ bool VideoReceiveStream::Decode() {
       frame_buffer_->NextFrame(wait_ms, &frame);
 
   if (res == video_coding::FrameBuffer::ReturnReason::kStopped) {
+     #ifdef __DecodeVerbose__
+    RTC_LOG(LS_NONE) << "* * * Decode() kStopped" ;
+    #endif
     return false;
   }
 
-  if (frame) {
+  if (frame) 
+  {
     #if 0
     const webrtc::VCMEncodedFrame* frame2=frame.get();
     if (frame2->EncodedImage()._encodedWidth!=0)
@@ -512,39 +518,33 @@ bool VideoReceiveStream::Decode() {
     {
       const bool result=(*SendNativeFrame_)(frame.get());
       decode_result = result?WEBRTC_VIDEO_CODEC_OK:WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME;
-      //In some tests it is possible to request for a keyframe and never get it.  This code confirms that even with the default path
-      //this still can occur.  It may be a hardware problem though.
-      #if 1
-      //To ensure a best chance of startup success we'll use the existing decoding system to try to get a keyframe
+      //This shouldn't be spamming, if it does something is very wrong
       if (decode_result==WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
-      {
-            RTC_LOG(LS_WARNING) << "No resolution, sending to video receiver.";
-            decode_result = video_receiver_.Decode(frame.get());
-      }
-      #else
-            //This shouldn't be spamming, if it does something is very wrong
-            if (decode_result==WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
-              RTC_LOG(LS_WARNING) << "No resolution, requesting a keyframe.";
-      #endif
+        RTC_LOG(LS_WARNING) << "No resolution, requesting a keyframe.";
     }
-    if (decode_result == WEBRTC_VIDEO_CODEC_OK ||
-        decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME) {
+    if (decode_result == WEBRTC_VIDEO_CODEC_OK ||   decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME) 
+    {
       keyframe_required_ = false;
       frame_decoded_ = true;
       rtp_video_stream_receiver_.FrameDecoded(frame->id.picture_id);
 
       if (decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
         RequestKeyFrame();
-    } else if (!frame_decoded_ || !keyframe_required_ ||
-               (last_keyframe_request_ms_ + kMaxWaitForKeyFrameMs < now_ms)) {
+    } 
+    else 
+    if (!frame_decoded_ || !keyframe_required_ || (last_keyframe_request_ms_ + kMaxWaitForKeyFrameMs < now_ms)) 
+    {
       keyframe_required_ = true;
       // TODO(philipel): Remove this keyframe request when downstream project
       //                 has been fixed.
       RequestKeyFrame();
       last_keyframe_request_ms_ = now_ms;
     }
-  } else {
-    //RTC_LOG(LS_NONE) << "* * *  NoFrame" ;
+  } else 
+  {
+    #ifdef __DecodeVerbose__
+    RTC_LOG(LS_NONE) << "* * *  NoFrame" ;
+    #endif
     RTC_DCHECK_EQ(res, video_coding::FrameBuffer::ReturnReason::kTimeout);
     int64_t now_ms = clock_->TimeInMilliseconds();
     absl::optional<int64_t> last_packet_ms =
