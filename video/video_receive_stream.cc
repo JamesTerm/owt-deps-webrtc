@@ -92,8 +92,10 @@ class SendNativeFrame
   private:
     const video_coding::EncodedFrame *m_frame;
     int m_Width,m_Height;
+    std::function<void(bool KeyFrame)> m_request_keyframe_callback;
   public:
-    WrapEncodedFrame(const video_coding::EncodedFrame *frame,int width,int height) : m_frame(frame),m_Width(width),m_Height(height)  {}
+    WrapEncodedFrame(const video_coding::EncodedFrame *frame,int width,int height,std::function<void(bool KeyFrame)> callback) : 
+      m_frame(frame),m_Width(width),m_Height(height),m_request_keyframe_callback(callback)  {}
     virtual int width() const override
       {   return m_Width;
       }
@@ -109,6 +111,9 @@ class SendNativeFrame
     virtual int get_frame_type() const override
       { return (int)m_frame->FrameType();
       }
+    virtual std::function<void(bool KeyFrame)> get_request_keyframe_callback() const override
+    { return m_request_keyframe_callback;
+    }
   };
   public:
   SendNativeFrame(VideoReceiveStream* parent) : m_pParent(parent)
@@ -132,7 +137,12 @@ class SendNativeFrame
     //Note:  it is assumed to always get h264 when asked for it, this simpler logic can work for that case
     RTC_DCHECK_EQ(frame->CodecSpecific()->codecType,kVideoCodecH264);
     //printf("[%4d] Sending h264 %p %p\n",counter++,m_pParent,frame);
-    rtc::scoped_refptr<WrapEncodedFrame> video_frame_buffer = new rtc::RefCountedObject<WrapEncodedFrame>(frame,m_Width,m_Height);
+    rtc::scoped_refptr<WrapEncodedFrame> video_frame_buffer = new rtc::RefCountedObject<WrapEncodedFrame>(frame,m_Width,m_Height,
+    [&](bool RequestKeyFrame)
+    {
+      if (RequestKeyFrame)
+       m_pParent->RequestKeyFrame();
+    });
     //const INativeBufferInterface *frame_info=video_frame_buffer->GetINative();
     //printf("[%4d] Sending h264 %p %p\n",counter++,m_pParent,frame_info->Data());
     // if (frame->FrameType()==FrameType::kVideoFrameKey)

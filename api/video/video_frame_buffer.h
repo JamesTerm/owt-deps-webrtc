@@ -12,7 +12,7 @@
 #define API_VIDEO_VIDEO_FRAME_BUFFER_H_
 
 #include <stdint.h>
-
+#include <functional>
 #include "rtc_base/refcount.h"
 #include "rtc_base/scoped_ref_ptr.h"
 
@@ -92,6 +92,8 @@ class INativeBufferInterface : public VideoFrameBuffer {
   rtc::scoped_refptr<I420BufferInterface> ToI420() override;
   virtual size_t size() const=0;
   virtual int get_frame_type() const=0;
+  using KeyFrame_Callback=std::function<void(bool)>;
+  virtual KeyFrame_Callback get_request_keyframe_callback() const=0;
  protected:
   ~INativeBufferInterface() override {}
 };
