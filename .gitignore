@@ -67,3 +67,8 @@
 /x86-generic_out/
 /xcodebuild
 !webrtc/*
+*.ipch
+*.bin
+*.json
+test/gmock.h
+test/gtest.h
