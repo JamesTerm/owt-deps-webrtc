@@ -331,6 +331,16 @@ void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   if (!packet.recovered()) {
     RTPHeader header;
     packet.GetHeader(&header);
+
+    //JDK cache the rotation here:
+    if (header.extension.hasVideoRotation)
+    {
+      //RTC_LOG (LS_INFO) << "***Rotation" << header.extension.videoRotation;
+      //We only cache when hasVideoRotation is true, this typically gets updated per Iframe
+      //When there is no rotation there is at least one call triggered here, but then no more
+      m_Rotation=(int)header.extension.videoRotation;
+    }
+
     // TODO(nisse): We should pass a recovered flag to stats, to aid
     // fixing bug bugs.webrtc.org/6339.
     rtp_receive_statistics_->IncomingPacket(header, packet.size(),

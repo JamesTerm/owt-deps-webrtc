@@ -136,7 +136,7 @@ class RtpVideoStreamReceiver : public RtpData,
   // themselves as secondary sinks.
   void AddSecondarySink(RtpPacketSinkInterface* sink);
   void RemoveSecondarySink(const RtpPacketSinkInterface* sink);
-
+  int GetRotation() const {return m_Rotation;}
  private:
   // Entry point doing non-stats work for a received packet. Called
   // for the same packet both before and after RED decapsulation.
@@ -198,6 +198,8 @@ class RtpVideoStreamReceiver : public RtpData,
 
   std::vector<RtpPacketSinkInterface*> secondary_sinks_
       RTC_GUARDED_BY(worker_task_checker_);
+    //JDK cache rotation
+   int m_Rotation=0; //See api\video\video_rotation.h for enum 
 };
 
 }  // namespace webrtc

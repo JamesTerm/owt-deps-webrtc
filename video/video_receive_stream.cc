@@ -114,6 +114,10 @@ class SendNativeFrame
     virtual std::function<void(bool KeyFrame)> get_request_keyframe_callback() const override
     { return m_request_keyframe_callback;
     }
+    int rotation() const override
+    {
+      return (int)m_frame->rotation();
+    }
   };
   public:
   SendNativeFrame(VideoReceiveStream* parent) : m_pParent(parent)
@@ -375,6 +379,13 @@ void VideoReceiveStream::RemoveSecondarySink(
 
 // TODO(tommi): This method grabs a lock 6 times.
 void VideoReceiveStream::OnFrame(const VideoFrame& video_frame) {
+  {
+    //No rotation established here
+    //go ahead and set the rotation (we'll have to const cast)
+    //RTC_LOG (LS_INFO) << "***Rotation" << rtp_video_stream_receiver_.GetRotation();
+    VideoFrame& hack=const_cast<VideoFrame&>(video_frame);
+    hack.set_rotation((VideoRotation)rtp_video_stream_receiver_.GetRotation());
+  }  
   //For sending frames directly avoid extra overhead with the stats_proxy_ call
   if (config_.want_h264_frames)
   {

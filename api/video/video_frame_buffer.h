@@ -94,6 +94,7 @@ class INativeBufferInterface : public VideoFrameBuffer {
   virtual int get_frame_type() const=0;
   using KeyFrame_Callback=std::function<void(bool)>;
   virtual KeyFrame_Callback get_request_keyframe_callback() const=0;
+  virtual int rotation() const=0;
  protected:
   ~INativeBufferInterface() override {}
 };
