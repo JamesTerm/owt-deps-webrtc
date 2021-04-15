@@ -176,7 +176,7 @@ class RtpVideoStreamReceiver : public LossNotificationSender,
   // themselves as secondary sinks.
   void AddSecondarySink(RtpPacketSinkInterface* sink);
   void RemoveSecondarySink(const RtpPacketSinkInterface* sink);
-
+  int GetRotation() const {return m_Rotation;}
   std::vector<webrtc::RtpSource> GetSources() const;
 
  private:
@@ -258,6 +258,8 @@ class RtpVideoStreamReceiver : public LossNotificationSender,
       RTC_PT_GUARDED_BY(network_tc_);
   std::atomic<bool> frames_decryptable_;
   absl::optional<ColorSpace> last_color_space_;
+    //JDK cache rotation
+   int m_Rotation=0; //See api\video\video_rotation.h for enum 
 };
 
 }  // namespace webrtc

@@ -385,6 +385,14 @@ void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   // that the first packet is included in the stats).
   if (!packet.recovered()) {
     rtp_receive_statistics_->OnRtpPacket(packet);
+    //JDK cache the rotation here:
+    if (header.extension.hasVideoRotation)
+    {
+      //RTC_LOG (LS_INFO) << "***Rotation" << header.extension.videoRotation;
+      //We only cache when hasVideoRotation is true, this typically gets updated per Iframe
+      //When there is no rotation there is at least one call triggered here, but then no more
+      m_Rotation=(int)header.extension.videoRotation;
+    }
   }
 
   for (RtpPacketSinkInterface* secondary_sink : secondary_sinks_) {

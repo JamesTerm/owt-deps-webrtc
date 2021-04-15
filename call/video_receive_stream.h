@@ -237,6 +237,8 @@ class VideoReceiveStream {
     // Target delay in milliseconds. A positive value indicates this stream is
     // used for streaming instead of a real-time call.
     int target_delay_ms = 0;
+    //If true this will bypass the decoder if the frames are h264
+    bool want_h264_frames = true;
 
     // TODO(nisse): Used with VideoDecoderFactory::LegacyCreateVideoDecoder.
     // Delete when that method is retired.
@@ -284,6 +286,10 @@ class VideoReceiveStream {
   virtual void SetFrameDecryptor(
       rtc::scoped_refptr<FrameDecryptorInterface> frame_decryptor) = 0;
 
+  // provide method to allow client to change options, and to provide feedback if needed
+  virtual const char* SetOptions(int argc,const char* argv[])=0;
+  //Setup callbacks
+  VideoReceiveStream();
  protected:
   virtual ~VideoReceiveStream() {}
 };

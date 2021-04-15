@@ -12,12 +12,13 @@
 #define API_VIDEO_VIDEO_FRAME_BUFFER_H_
 
 #include <stdint.h>
-
+#include <functional>
 #include "api/scoped_refptr.h"
 #include "rtc_base/ref_count.h"
 
 namespace webrtc {
 
+class INativeBufferInterface;
 class I420BufferInterface;
 class I420ABufferInterface;
 class I444BufferInterface;
@@ -78,9 +79,25 @@ class VideoFrameBuffer : public rtc::RefCountInterface {
   const I420ABufferInterface* GetI420A() const;
   const I444BufferInterface* GetI444() const;
   const I010BufferInterface* GetI010() const;
-
+  INativeBufferInterface* GetINative();
+  const INativeBufferInterface* GetINative() const;
  protected:
   ~VideoFrameBuffer() override {}
+};
+
+// This interface represents native frames
+class INativeBufferInterface : public VideoFrameBuffer {
+ public:
+  Type type() const final;
+  virtual const uint8_t* Data() const = 0;
+  rtc::scoped_refptr<I420BufferInterface> ToI420() override;
+  virtual size_t size() const=0;
+  virtual int get_frame_type() const=0;
+  using KeyFrame_Callback=std::function<void(bool)>;
+  virtual KeyFrame_Callback get_request_keyframe_callback() const=0;
+  virtual int rotation() const=0;
+ protected:
+  ~INativeBufferInterface() override {}
 };
 
 // This interface represents planar formats.

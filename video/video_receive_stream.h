@@ -43,6 +43,8 @@ class VCMTiming;
 
 namespace internal {
 
+class SendNativeFrame;
+
 class VideoReceiveStream : public webrtc::VideoReceiveStream,
                            public rtc::VideoSinkInterface<VideoFrame>,
                            public NackSender,
@@ -82,6 +84,9 @@ class VideoReceiveStream : public webrtc::VideoReceiveStream,
   void Start() override;
   void Stop() override;
 
+  // provide method to allow client to change options, and to provide feedback if needed
+  const char* SetOptions(int argc,const char* argv[]) override;
+  
   webrtc::VideoReceiveStream::Stats GetStats() const override;
 
   void AddSecondarySink(RtpPacketSinkInterface* sink) override;
@@ -182,6 +187,7 @@ class VideoReceiveStream : public webrtc::VideoReceiveStream,
   std::unique_ptr<RtpStreamReceiverInterface> media_receiver_;
   std::unique_ptr<RtxReceiveStream> rtx_receive_stream_;
   std::unique_ptr<RtpStreamReceiverInterface> rtx_receiver_;
+  std::unique_ptr<SendNativeFrame> SendNativeFrame_;
 
   // Whenever we are in an undecodable state (stream has just started or due to
   // a decoding error) we require a keyframe to restart the stream.

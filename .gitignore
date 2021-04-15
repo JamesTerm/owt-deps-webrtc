@@ -39,7 +39,6 @@
 .sw?
 /Makefile
 /base
-/build
 /buildtools
 /ios
 /mojo
@@ -68,3 +67,8 @@
 /xcodebuild
 /.vscode
 !webrtc/*
+*.ipch
+*.bin
+*.json
+test/gmock.h
+test/gtest.h
