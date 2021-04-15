@@ -64,6 +64,9 @@ class VCMEncodedFrame : protected EncodedImage {
   using EncodedImage::SpatialLayerFrameSize;
   using EncodedImage::Timestamp;
 
+  //JDK - I have brought this back from 4.2, as I can't access it through private inheritance
+  const uint8_t* Buffer() const { return buffer(); }
+
   /**
    *   Get render time in milliseconds
    */

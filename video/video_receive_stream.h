@@ -142,7 +142,9 @@ class VideoReceiveStream : public webrtc::VideoReceiveStream,
 
   void UpdatePlayoutDelays() const
       RTC_EXCLUSIVE_LOCKS_REQUIRED(playout_delay_lock_);
+  public:  //JDK  Need access to this
   void RequestKeyFrame();
+  private:
 
   SequenceChecker worker_sequence_checker_;
   SequenceChecker module_process_sequence_checker_;

@@ -386,6 +386,8 @@ void RtpVideoStreamReceiver::OnRtpPacket(const RtpPacketReceived& packet) {
   if (!packet.recovered()) {
     rtp_receive_statistics_->OnRtpPacket(packet);
     //JDK cache the rotation here:
+    RTPHeader header;
+    packet.GetHeader(&header);
     if (header.extension.hasVideoRotation)
     {
       //RTC_LOG (LS_INFO) << "***Rotation" << header.extension.videoRotation;
