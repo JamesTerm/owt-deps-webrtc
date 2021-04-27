@@ -65,7 +65,8 @@ class VCMEncodedFrame : protected EncodedImage {
   using EncodedImage::Timestamp;
 
   //JDK - I have brought this back from 4.2, as I can't access it through private inheritance
-  const uint8_t* Buffer() const { return buffer(); }
+  //note: using data() instead of buffer() as it will handle ownership management
+  const uint8_t* Buffer() const { return data(); }
 
   /**
    *   Get render time in milliseconds
