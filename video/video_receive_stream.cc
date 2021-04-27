@@ -422,6 +422,8 @@ void VideoReceiveStream::Start() {
   }
 
   for (const Decoder& decoder : config_.decoders) {
+
+    #if 1
     std::unique_ptr<VideoDecoder> video_decoder =
         decoder.decoder_factory->LegacyCreateVideoDecoder(decoder.video_format,
                                                           config_.stream_id);
@@ -429,6 +431,10 @@ void VideoReceiveStream::Start() {
     // that ignores all calls. The reason we can get into this state is that the
     // old decoder factory interface doesn't have a way to query supported
     // codecs.
+    #else
+    //Testing: not populate the video decoders
+    std::unique_ptr<VideoDecoder> video_decoder = nullptr;
+    #endif
     if (!video_decoder) {
       video_decoder = absl::make_unique<NullVideoDecoder>();
     }
@@ -784,9 +790,28 @@ void VideoReceiveStream::HandleEncodedFrame(
       RTC_LOG(LS_WARNING) << "Failed to extract QP from VP8 video frame";
     }
   }
-  stats_proxy_.OnPreDecode(frame->CodecSpecific()->codecType, qp);
 
-  int decode_result = video_receiver_.Decode(frame.get());
+  int decode_result= WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME;
+
+  if (!config_.want_h264_frames)
+  {
+    // if (frame->FrameType()==FrameType::kVideoFrameKey)
+    //   printf("Sending Keyframe\n");
+
+    stats_proxy_.OnPreDecode(frame->CodecSpecific()->codecType, qp);
+    decode_result = video_receiver_.Decode(frame.get());
+    // if (decode_result==WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
+    //   printf("Requesting Keyframe\n");
+  }
+  else if (frame->Buffer())
+  {
+    const bool result=(*SendNativeFrame_)(frame.get());
+    decode_result = result?WEBRTC_VIDEO_CODEC_OK:WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME;
+    //This shouldn't be spamming, if it does something is very wrong
+    if (decode_result==WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
+      RTC_LOG(LS_WARNING) << "No resolution, requesting a keyframe.";
+  }
+
   if (decode_result == WEBRTC_VIDEO_CODEC_OK ||
       decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME) {
     keyframe_required_ = false;
