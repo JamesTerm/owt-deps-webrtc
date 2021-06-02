@@ -588,9 +588,9 @@ void VideoReceiveStream::OnFrame(const VideoFrame& video_frame) {
     //RTC_LOG (LS_INFO) << "***Rotation" << rtp_video_stream_receiver_.GetRotation();
     VideoFrame& hack=const_cast<VideoFrame&>(video_frame);
     hack.set_rotation((VideoRotation)rtp_video_stream_receiver_.GetRotation());
-  }  
+  }
   //For sending frames directly avoid extra overhead with the stats_proxy_ call
-  if (config_.want_h264_frames)
+  if (video_frame.video_frame_buffer()->type() == webrtc::VideoFrameBuffer::Type::kNative)
   {
     config_.renderer->OnFrame(video_frame);
     return;
@@ -792,8 +792,9 @@ void VideoReceiveStream::HandleEncodedFrame(
   }
 
   int decode_result= WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME;
-
-  if (!config_.want_h264_frames)
+  //This is the only logic to determine whether to send compressed frames
+  //Note: we must have h264 compression to send compressed frames
+  if ((!config_.want_h264_frames)||(frame->CodecSpecific()->codecType != kVideoCodecH264))
   {
     // if (frame->FrameType()==FrameType::kVideoFrameKey)
     //   printf("Sending Keyframe\n");
