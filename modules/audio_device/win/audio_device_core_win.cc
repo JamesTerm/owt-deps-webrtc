@@ -2879,7 +2879,13 @@ DWORD AudioDeviceWindowsCore::DoRenderThread() {
         }
 
         DWORD dwFlags(0);
+        //JDK case 111432: we do not want to hear the audio, as RequestPlayoutData() moves the data to where
+        //we process it
+        #if 1
+        hr = _ptrRenderClient->ReleaseBuffer(_playBlockSize, AUDCLNT_BUFFERFLAGS_SILENT);
+        #else
         hr = _ptrRenderClient->ReleaseBuffer(_playBlockSize, dwFlags);
+        #endif
         // See http://msdn.microsoft.com/en-us/library/dd316605(VS.85).aspx
         // for more details regarding AUDCLNT_E_DEVICE_INVALIDATED.
         EXIT_ON_ERROR(hr);
