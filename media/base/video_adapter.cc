@@ -109,7 +109,7 @@ VideoAdapter::VideoAdapter(int required_resolution_alignment)
       resolution_request_max_pixel_count_(std::numeric_limits<int>::max()),
       max_framerate_request_(std::numeric_limits<int>::max()) {}
 
-VideoAdapter::VideoAdapter() : VideoAdapter(1) {}
+VideoAdapter::VideoAdapter() : VideoAdapter(16) {}
 
 VideoAdapter::~VideoAdapter() {}
 
