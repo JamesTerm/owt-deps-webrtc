@@ -2878,12 +2878,12 @@ DWORD AudioDeviceWindowsCore::DoRenderThread() {
           nSamples = _ptrAudioBuffer->GetPlayoutData((int8_t*)pData);
         }
 
-        DWORD dwFlags(0);
         //JDK case 111432: we do not want to hear the audio, as RequestPlayoutData() moves the data to where
         //we process it
         #if 1
         hr = _ptrRenderClient->ReleaseBuffer(_playBlockSize, AUDCLNT_BUFFERFLAGS_SILENT);
         #else
+        DWORD dwFlags(0);
         hr = _ptrRenderClient->ReleaseBuffer(_playBlockSize, dwFlags);
         #endif
         // See http://msdn.microsoft.com/en-us/library/dd316605(VS.85).aspx
